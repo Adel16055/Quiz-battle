@@ -1,11 +1,21 @@
 package ru.itis.quizbattle.common;
 
+/**
+ * Класс сообщений протокола с константами
+ */
 public class Message {
+
+    // Константы протокола
+    public static final int PORT = 8080;
+    public static final int MAX_PLAYERS = 2;
+    public static final int INITIAL_HP = 100;
+    public static final int DAMAGE_PER_QUESTION = 20;
+
+    // Типы сообщений
     public enum Type {
         JOIN,        // JOIN:playerId
         QUESTION,    // QUESTION:text
         ANSWER,      // ANSWER:playerId:text
-        DAMAGE,      // DAMAGE:playerId:value
         STATE,       // STATE:player1Hp:player2Hp
         WIN,         // WIN:playerId
         CHAT,        // CHAT:playerId:text

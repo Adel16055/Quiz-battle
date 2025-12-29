@@ -1,17 +1,37 @@
 package ru.itis.quizbattle.client;
 
+import ru.itis.quizbattle.common.Message;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
+/**
+ * Главный графический интерфейс клиента с интегрированной игровой панелью
+ */
 public class ClientGUI {
-    private JFrame frame;
-    private GamePanel gamePanel;
+    public JFrame frame;
     private JTextArea chatArea;
     private JTextField answerField;
     private JButton sendButton;
+    private JLabel connectionStatus;
     private Client client;
-    private int playerId;
+
+    // Игровое состояние
+    private int playerId = 0;
+    private int player1Hp = Message.INITIAL_HP;
+    private int player2Hp = Message.INITIAL_HP;
+    private String currentQuestion = "Ожидание вопроса...";
+    private boolean gameStarted = false;
+    private int currentTurnPlayer = 0;
+
+    // Анимационные параметры
+    private boolean isAnimating = false;
+    private int attackAnimationFrame = 0;
+    private int attackerId = 1;
+    private Timer animationTimer;
 
     public ClientGUI() {
         createGUI();
@@ -23,35 +43,67 @@ public class ClientGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        // Игровое поле
-        gamePanel = new GamePanel(0); // временно 0, потом обновим
+        // Обработчик закрытия окна
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (client != null) {
+                    client.disconnect();
+                }
+            }
+        });
+
+        // Панель статуса
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        connectionStatus = new JLabel("❌ Не подключено");
+        connectionStatus.setForeground(Color.RED);
+        statusPanel.add(connectionStatus);
+        frame.add(statusPanel, BorderLayout.NORTH);
+
+        // Создаем игровую панель (кастомный JPanel)
+        GamePanel gamePanel = new GamePanel();
         frame.add(gamePanel, BorderLayout.CENTER);
 
-        // Панель чата и ввода
+        // Создаем нижнюю панель с чатом
+        JPanel bottomPanel = createBottomPanel();
+        frame.add(bottomPanel, BorderLayout.SOUTH);
+
+        // Настройка окна
+        frame.setSize(900, 600);
+        frame.setMinimumSize(new Dimension(800, 500));
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
+    private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
+        // Чат
         chatArea = new JTextArea(8, 40);
         chatArea.setEditable(false);
+        chatArea.setLineWrap(true);
+        chatArea.setWrapStyleWord(true);
         JScrollPane scrollPane = new JScrollPane(chatArea);
+        scrollPane.setPreferredSize(new Dimension(0, 150));
         bottomPanel.add(scrollPane, BorderLayout.CENTER);
 
-        JPanel inputPanel = new JPanel(new BorderLayout());
+        // Панель ввода
+        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+
         answerField = new JTextField();
         answerField.addActionListener(e -> sendAnswer());
 
         sendButton = new JButton("Ответить");
         sendButton.addActionListener(e -> sendAnswer());
+        sendButton.setEnabled(false);
 
         inputPanel.add(new JLabel("Ваш ответ: "), BorderLayout.WEST);
         inputPanel.add(answerField, BorderLayout.CENTER);
         inputPanel.add(sendButton, BorderLayout.EAST);
 
         bottomPanel.add(inputPanel, BorderLayout.SOUTH);
-        frame.add(bottomPanel, BorderLayout.SOUTH);
-
-        frame.pack();
-        frame.setLocationRelativeTo(null);
-        frame.setVisible(true);
+        return bottomPanel;
     }
 
     private void connectToServer() {
@@ -77,55 +129,75 @@ public class ClientGUI {
     }
 
     public void updateGameState(int player1Hp, int player2Hp) {
-        gamePanel.updateState(player1Hp, player2Hp);
+        this.player1Hp = player1Hp;
+        this.player2Hp = player2Hp;
+        gameStarted = true;
+        frame.repaint(); // Перерисовываем игровую панель
+    }
+
+    public int getPlayer1Hp() {
+        return player1Hp;
+    }
+
+    public int getPlayer2Hp() {
+        return player2Hp;
     }
 
     public void setQuestion(String question) {
-        gamePanel.setQuestion(question);
-        addMessage("Новый вопрос: " + question);
+        this.currentQuestion = question;
+        if (!question.equals("Ожидание вопроса...")) {
+            addMessage("Новый вопрос: " + question);
+            gameStarted = true;
+        }
+        frame.repaint();
     }
 
     public void setPlayerId(int id) {
         this.playerId = id;
-        // Создаем новую панель с правильным ID игрока
-        GamePanel newGamePanel = new GamePanel(id);
-
-        // Заменяем старую панель на новую
-        frame.getContentPane().removeAll();
-        frame.add(newGamePanel, BorderLayout.CENTER);
-
-        // Восстанавливаем нижнюю панель с чатом
-        JPanel bottomPanel = createBottomPanel();
-        frame.add(bottomPanel, BorderLayout.SOUTH);
-
-        frame.revalidate();
-        frame.repaint();
-
-        this.gamePanel = newGamePanel;
+        sendButton.setEnabled(true);
         addMessage("Вы игрок " + id);
+
+        // Обновляем заголовок окна
+        SwingUtilities.invokeLater(() -> {
+            frame.setTitle("Quiz Battle - Игрок " + id);
+        });
+
+        frame.repaint();
     }
 
-    private JPanel createBottomPanel() {
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+    public void setCurrentTurnPlayer(int playerId) {
+        this.currentTurnPlayer = playerId;
+        frame.repaint();
+    }
 
-        chatArea = new JTextArea(8, 40);
-        chatArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(chatArea);
-        bottomPanel.add(scrollPane, BorderLayout.CENTER);
+    public void setGameStarted(boolean started) {
+        this.gameStarted = started;
+        if (started) {
+            addMessage("Игра началась!");
+        }
+        frame.repaint();
+    }
 
-        JPanel inputPanel = new JPanel(new BorderLayout());
-        answerField = new JTextField();
-        answerField.addActionListener(e -> sendAnswer());
+    public void triggerAttackAnimation(int attackerId) {
+        this.attackerId = attackerId;
+        this.isAnimating = true;
+        this.attackAnimationFrame = 0;
 
-        sendButton = new JButton("Ответить");
-        sendButton.addActionListener(e -> sendAnswer());
+        if (animationTimer != null && animationTimer.isRunning()) {
+            animationTimer.stop();
+        }
 
-        inputPanel.add(new JLabel("Ваш ответ: "), BorderLayout.WEST);
-        inputPanel.add(answerField, BorderLayout.CENTER);
-        inputPanel.add(sendButton, BorderLayout.EAST);
+        animationTimer = new Timer(50, e -> {
+            attackAnimationFrame++;
+            if (attackAnimationFrame > 20) {
+                isAnimating = false;
+                animationTimer.stop();
+            }
+            frame.repaint();
+        });
+        animationTimer.start();
 
-        bottomPanel.add(inputPanel, BorderLayout.SOUTH);
-        return bottomPanel;
+        Toolkit.getDefaultToolkit().beep();
     }
 
     public void addMessage(String message) {
@@ -135,11 +207,27 @@ public class ClientGUI {
         });
     }
 
+    public void setConnected(boolean connected) {
+        SwingUtilities.invokeLater(() -> {
+            if (connected) {
+                connectionStatus.setText("✅ Подключено");
+                connectionStatus.setForeground(Color.GREEN);
+            } else {
+                connectionStatus.setText("❌ Отключено");
+                connectionStatus.setForeground(Color.RED);
+                sendButton.setEnabled(false);
+            }
+        });
+    }
+
     public void showWinner(int winner) {
         SwingUtilities.invokeLater(() -> {
             String message = winner == playerId ?
-                    "Поздравляем! Вы победили!" :
-                    "Игрок " + winner + " победил!";
+                    "🎉 Поздравляем! Вы победили!" :
+                    "😢 Игрок " + winner + " победил!";
+
+            Toolkit.getDefaultToolkit().beep();
+
             JOptionPane.showMessageDialog(frame, message, "Конец игры", JOptionPane.INFORMATION_MESSAGE);
             sendButton.setEnabled(false);
             answerField.setEnabled(false);
@@ -150,7 +238,246 @@ public class ClientGUI {
         frame.setTitle(title);
     }
 
+    /**
+     * Внутренний класс игровой панели
+     */
+    private class GamePanel extends JPanel {
+        public GamePanel() {
+            setBackground(new Color(245, 245, 255));
+            setBorder(BorderFactory.createLineBorder(Color.GRAY, 2));
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            int width = getWidth();
+            int height = getHeight();
+
+            drawBackground(g2d, width, height);
+            drawBattleField(g2d, width, height);
+            drawHpBars(g2d, width, height);
+            drawQuestion(g2d, width, height);
+
+            if (isAnimating) {
+                drawAttackAnimation(g2d, width, height);
+            }
+
+            drawPlayerInfo(g2d, width, height);
+        }
+
+        private void drawBackground(Graphics2D g, int width, int height) {
+            GradientPaint gradient = new GradientPaint(0, 0, new Color(230, 240, 255),
+                    width, height, new Color(210, 225, 255));
+            g.setPaint(gradient);
+            g.fillRect(0, 0, width, height);
+        }
+
+        private void drawBattleField(Graphics2D g, int width, int height) {
+            int playerWidth = width / 8;
+            int playerHeight = height / 3;
+            int player1X = width / 10;
+            int player2X = width - width / 10 - playerWidth;
+            int playerY = height / 3;
+
+            // Игрок 1
+            GradientPaint player1Gradient = new GradientPaint(
+                    player1X, playerY, new Color(220, 50, 50),
+                    player1X, playerY + playerHeight, new Color(180, 30, 30)
+            );
+            g.setPaint(player1Gradient);
+            g.fillRoundRect(player1X, playerY, playerWidth, playerHeight, 20, 20);
+            g.setColor(Color.BLACK);
+            g.drawRoundRect(player1X, playerY, playerWidth, playerHeight, 20, 20);
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.drawString("Игрок 1", player1X + playerWidth/4, playerY - 10);
+
+            // Игрок 2
+            GradientPaint player2Gradient = new GradientPaint(
+                    player2X, playerY, new Color(50, 50, 220),
+                    player2X, playerY + playerHeight, new Color(30, 30, 180)
+            );
+            g.setPaint(player2Gradient);
+            g.fillRoundRect(player2X, playerY, playerWidth, playerHeight, 20, 20);
+            g.setColor(Color.BLACK);
+            g.drawRoundRect(player2X, playerY, playerWidth, playerHeight, 20, 20);
+            g.drawString("Игрок 2", player2X + playerWidth/4, playerY - 10);
+
+            // Разделительная линия
+            g.setColor(new Color(100, 100, 100, 150));
+            g.setStroke(new BasicStroke(3, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
+                    0, new float[]{10, 10}, 0));
+            g.drawLine(width / 2, height / 6, width / 2, height - height / 4);
+            g.setStroke(new BasicStroke(1));
+        }
+
+        private void drawHpBars(Graphics2D g, int width, int height) {
+            int barWidth = width / 4;
+            int barHeight = 25;
+            int bar1X = width / 10;
+            int bar2X = width - width / 10 - barWidth;
+            int barY = height - height / 4;
+
+            // Фон
+            g.setColor(Color.GRAY);
+            g.fillRoundRect(bar1X, barY, barWidth, barHeight, 10, 10);
+            g.fillRoundRect(bar2X, barY, barWidth, barHeight, 10, 10);
+
+            // Цвет HP
+            Color hpColor1 = player1Hp > 50 ? Color.GREEN :
+                    player1Hp > 25 ? Color.ORANGE : Color.RED;
+            Color hpColor2 = player2Hp > 50 ? Color.GREEN :
+                    player2Hp > 25 ? Color.ORANGE : Color.RED;
+
+            // Заполнение
+            int fillWidth1 = (int)(barWidth * player1Hp / 100.0);
+            int fillWidth2 = (int)(barWidth * player2Hp / 100.0);
+
+            GradientPaint hpGradient1 = new GradientPaint(
+                    bar1X, barY, hpColor1.brighter(),
+                    bar1X, barY + barHeight, hpColor1.darker()
+            );
+            g.setPaint(hpGradient1);
+            g.fillRoundRect(bar1X, barY, fillWidth1, barHeight, 10, 10);
+
+            GradientPaint hpGradient2 = new GradientPaint(
+                    bar2X, barY, hpColor2.brighter(),
+                    bar2X, barY + barHeight, hpColor2.darker()
+            );
+            g.setPaint(hpGradient2);
+            g.fillRoundRect(bar2X, barY, fillWidth2, barHeight, 10, 10);
+
+            // Контур
+            g.setColor(Color.BLACK);
+            g.drawRoundRect(bar1X, barY, barWidth, barHeight, 10, 10);
+            g.drawRoundRect(bar2X, barY, barWidth, barHeight, 10, 10);
+
+            // Текст
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.drawString("HP: " + player1Hp, bar1X + barWidth/2 - 25, barY + 18);
+            g.drawString("HP: " + player2Hp, bar2X + barWidth/2 - 25, barY + 18);
+        }
+
+        private void drawQuestion(Graphics2D g, int width, int height) {
+            // Рамка вопроса
+            int questionWidth = width - 100;
+            int questionHeight = 80;
+            int questionX = 50;
+            int questionY = 20;
+
+            g.setColor(new Color(255, 255, 255, 200));
+            g.fillRoundRect(questionX, questionY, questionWidth, questionHeight, 15, 15);
+            g.setColor(new Color(100, 100, 100));
+            g.drawRoundRect(questionX, questionY, questionWidth, questionHeight, 15, 15);
+
+            // Заголовок
+            g.setColor(Color.BLUE);
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.drawString("Вопрос:", questionX + 10, questionY + 20);
+
+            // Если игра не началась, показываем сообщение об ожидании
+            if (!gameStarted || currentQuestion.equals("Ожидание вопроса...")) {
+                g.setColor(Color.GRAY);
+                g.setFont(new Font("Arial", Font.ITALIC, 14));
+                String waitingText = "Ожидание подключения второго игрока...";
+                if (playerId > 0) {
+                    waitingText = "Ожидаем второго игрока...";
+                }
+                int textWidth = g.getFontMetrics().stringWidth(waitingText);
+                g.drawString(waitingText, questionX + (questionWidth - textWidth) / 2, questionY + 50);
+                return;
+            }
+
+            // Текст вопроса
+            g.setColor(Color.BLACK);
+            g.setFont(new Font("Arial", Font.PLAIN, 14));
+
+            // Разбивка на строки
+            String[] words = currentQuestion.split(" ");
+            StringBuilder line = new StringBuilder();
+            int y = questionY + 40;
+            int maxLineWidth = questionWidth - 20;
+
+            for (String word : words) {
+                if (g.getFontMetrics().stringWidth(line.toString() + word + " ") > maxLineWidth) {
+                    g.drawString(line.toString(), questionX + 10, y);
+                    y += 20;
+                    line = new StringBuilder();
+                }
+                line.append(word).append(" ");
+            }
+            if (line.length() > 0) {
+                g.drawString(line.toString(), questionX + 10, y);
+            }
+        }
+
+        private void drawAttackAnimation(Graphics2D g, int width, int height) {
+            int playerWidth = width / 8;
+            int playerHeight = height / 3;
+            int player1X = width / 10 + playerWidth/2;
+            int player2X = width - width / 10 - playerWidth/2;
+            int playerY = height / 3 + playerHeight/2;
+
+            int startX = (attackerId == 1) ? player1X : player2X;
+            int targetX = (attackerId == 1) ? player2X : player1X;
+
+            float progress = attackAnimationFrame / 20.0f;
+            int x = (int)(startX + (targetX - startX) * progress);
+            int y = playerY;
+
+            double rotation = progress * Math.PI * 4;
+
+            AffineTransform oldTransform = g.getTransform();
+            g.translate(x, y);
+            g.rotate(rotation);
+
+            GradientPaint projectileGradient = new GradientPaint(
+                    -10, -10, Color.YELLOW,
+                    10, 10, Color.RED
+            );
+            g.setPaint(projectileGradient);
+            g.fillOval(-15, -15, 30, 30);
+
+            g.setColor(new Color(255, 255, 0, 100));
+            for (int i = 1; i <= 3; i++) {
+                g.fillOval(-15 - i*2, -15 - i*2, 30 + i*4, 30 + i*4);
+            }
+
+            g.setTransform(oldTransform);
+        }
+
+        private void drawPlayerInfo(Graphics2D g, int width, int height) {
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+
+            String playerText;
+            Color textColor;
+
+            if (playerId == 0) {
+                playerText = "Ожидание подключения...";
+                textColor = Color.GRAY;
+            } else {
+                playerText = "Вы игрок " + playerId;
+                textColor = Color.DARK_GRAY;
+
+                // Если это ваш ход, выделяем звездочкой
+                if (currentTurnPlayer == playerId && gameStarted) {
+                    playerText = "⭐ " + playerText + " (Ваш ход!)";
+                    textColor = Color.RED;
+                }
+            }
+
+            g.setColor(textColor);
+            int textWidth = g.getFontMetrics().stringWidth(playerText);
+            g.drawString(playerText, width - textWidth - 20, 30);
+        }
+    }
+
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(ClientGUI::new);
+        SwingUtilities.invokeLater(() -> {
+            ClientGUI gui = new ClientGUI();
+            gui.frame.setTitle("Quiz Battle Client");
+        });
     }
 }
