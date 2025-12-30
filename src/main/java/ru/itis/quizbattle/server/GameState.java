@@ -20,35 +20,45 @@ public class GameState {
     }
 
     private void loadQuestionsFromFile() {
-        File file = new File("questions.txt");
+        
+        try (InputStream inputStream = getClass().getClassLoader()
+                .getResourceAsStream("questions.txt")) {
 
-        if (!file.exists()) {
-            return;
-        }
+            if (inputStream == null) {
+                System.err.println("Файл questions.txt не найден в classpath!");
+                return;
+            }
 
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            String line;
-            int count = 0;
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+                String line;
+                int count = 0;
 
-            while ((line = br.readLine()) != null) {
-                line = line.trim();
-                if (line.isEmpty() || line.startsWith("#")) {
-                    continue;
-                }
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue;
+                    }
 
-                String[] parts = line.split("\\|");
-                if (parts.length == 2) {
-                    String questionText = parts[0].trim();
-                    String answer = parts[1].trim();
+                    String[] parts = line.split("\\|");
+                    if (parts.length == 2) {
+                        String questionText = parts[0].trim();
+                        String answer = parts[1].trim();
 
-                    if (!questionText.isEmpty() && !answer.isEmpty()) {
-                        questions.add(new Question(questionText, answer));
-                        count++;
+                        if (!questionText.isEmpty() && !answer.isEmpty()) {
+                            questions.add(new Question(questionText, answer));
+                            count++;
+                        }
                     }
                 }
+
+                System.out.println("Загружено вопросов: " + count);
+
+            } catch (IOException e) {
+                System.err.println("Ошибка чтения файла: " + e.getMessage());
             }
 
         } catch (IOException e) {
+            System.err.println("Ошибка открытия потока: " + e.getMessage());
         }
     }
 
