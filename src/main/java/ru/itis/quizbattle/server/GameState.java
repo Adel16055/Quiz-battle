@@ -2,6 +2,7 @@ package ru.itis.quizbattle.server;
 
 import ru.itis.quizbattle.common.Message;
 import ru.itis.quizbattle.common.Question;
+
 import java.io.*;
 import java.util.*;
 
@@ -25,6 +26,7 @@ public class GameState {
     private void loadQuestions() {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("questions.txt");
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+
             String line;
             int count = 0;
             while ((line = br.readLine()) != null) {
@@ -44,6 +46,7 @@ public class GameState {
                 createDefaultQuestions();
                 System.out.println("⚠️ Используются вопросы по умолчанию");
             }
+
         } catch (IOException e) {
             System.err.println("❌ Ошибка загрузки вопросов: " + e.getMessage());
             createDefaultQuestions();
@@ -96,10 +99,8 @@ public class GameState {
             } else {
                 player1Hp = Math.max(0, player1Hp - Message.DAMAGE_PER_QUESTION);
             }
-
             currentPlayer = (currentPlayer == 1) ? 2 : 1;
             currentQuestion = getRandomQuestion();
-
             return "Правильно! Нанесено " + Message.DAMAGE_PER_QUESTION + " урона";
         } else {
             currentPlayer = (currentPlayer == 1) ? 2 : 1;

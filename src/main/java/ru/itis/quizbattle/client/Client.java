@@ -1,6 +1,7 @@
 package ru.itis.quizbattle.client;
 
 import ru.itis.quizbattle.common.Message;
+
 import java.io.*;
 import java.net.Socket;
 import java.util.HashMap;
@@ -75,7 +76,6 @@ public class Client extends Thread {
         playerId = Integer.parseInt(msg.getData()[0]);
         gui.setPlayerId(playerId);
         gui.addMessage("Вы игрок " + playerId);
-
         // Обновляем заголовок окна
         gui.setTitle("Quiz Battle - Игрок " + playerId);
     }
@@ -88,6 +88,7 @@ public class Client extends Thread {
     private void handleState(Message msg) {
         int player1Hp = Integer.parseInt(msg.getData()[0]);
         int player2Hp = Integer.parseInt(msg.getData()[1]);
+
         gui.updateGameState(player1Hp, player2Hp);
 
         // Проверяем, нужно ли запустить анимацию атаки

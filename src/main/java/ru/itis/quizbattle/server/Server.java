@@ -1,6 +1,7 @@
 package ru.itis.quizbattle.server;
 
 import ru.itis.quizbattle.common.Message;
+
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -28,8 +29,7 @@ public class Server {
             Socket clientSocket = serverSocket.accept();
             int playerId = clients.size() + 1;
 
-            System.out.println("🎮 Игрок " + playerId + " подключился: " +
-                    clientSocket.getInetAddress().getHostAddress());
+            System.out.println("🎮 Игрок " + playerId + " подключился: " + clientSocket.getInetAddress().getHostAddress());
 
             // Создаем обработчик клиента
             ClientHandler client = new ClientHandler(clientSocket, this, playerId);
@@ -37,15 +37,14 @@ public class Server {
 
             // Отправляем сообщение о подключении ПЕРЕД запуском потока
             client.sendJoinMessage();
-
             client.start();
+
             broadcastChat("0", "Игрок " + playerId + " присоединился к игре!");
 
             if (clients.size() == Message.MAX_PLAYERS) {
                 startGame();
             } else {
-                broadcastChat("0", "Ожидаем подключения " +
-                        (Message.MAX_PLAYERS - clients.size()) + " игрока(ов)...");
+                broadcastChat("0", "Ожидаем подключения " + (Message.MAX_PLAYERS - clients.size()) + " игрока(ов)...");
             }
         }
     }
@@ -53,6 +52,7 @@ public class Server {
     private void startGame() {
         gameStarted = true;
         gameState = new GameState();
+
         System.out.println("🚀 Все игроки подключены! Начинаем игру!");
         broadcastChat("0", "Все игроки подключены! Игра начинается!");
 
@@ -61,7 +61,6 @@ public class Server {
         }
 
         broadcastState();
-
         int currentPlayer = gameState.getCurrentPlayer();
         sendQuestionToCurrentPlayer();
         broadcastChat("0", "Игрок " + currentPlayer + " отвечает первым!");

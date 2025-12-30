@@ -33,6 +33,17 @@ public class ClientGUI {
     private int attackerId = 1;
     private Timer animationTimer;
 
+    // НОВОЕ: Анимация получения урона
+    private boolean damageAnimationActive = false;
+    private int damageAnimationFrame = 0;
+    private int damagedPlayerId = 0;
+    private Timer damageAnimationTimer;
+
+    // НОВОЕ: Анимация подсветки текущего игрока
+    private boolean highlightAnimationActive = false;
+    private int highlightAnimationFrame = 0;
+    private Timer highlightAnimationTimer;
+
     public ClientGUI() {
         createGUI();
         connectToServer();
@@ -129,10 +140,18 @@ public class ClientGUI {
     }
 
     public void updateGameState(int player1Hp, int player2Hp) {
+        // НОВОЕ: Проверяем, получил ли кто-то урон
+        if (this.player1Hp > player1Hp) {
+            triggerDamageAnimation(1); // Игрок 1 получил урон
+        }
+        if (this.player2Hp > player2Hp) {
+            triggerDamageAnimation(2); // Игрок 2 получил урон
+        }
+
         this.player1Hp = player1Hp;
         this.player2Hp = player2Hp;
         gameStarted = true;
-        frame.repaint(); // Перерисовываем игровую панель
+        frame.repaint();
     }
 
     public int getPlayer1Hp() {
@@ -157,7 +176,6 @@ public class ClientGUI {
         sendButton.setEnabled(true);
         addMessage("Вы игрок " + id);
 
-        // Обновляем заголовок окна
         SwingUtilities.invokeLater(() -> {
             frame.setTitle("Quiz Battle - Игрок " + id);
         });
@@ -167,6 +185,10 @@ public class ClientGUI {
 
     public void setCurrentTurnPlayer(int playerId) {
         this.currentTurnPlayer = playerId;
+        // НОВОЕ: Запускаем анимацию подсветки при смене хода
+        if (gameStarted) {
+            triggerHighlightAnimation();
+        }
         frame.repaint();
     }
 
@@ -196,8 +218,47 @@ public class ClientGUI {
             frame.repaint();
         });
         animationTimer.start();
+    }
 
-        Toolkit.getDefaultToolkit().beep();
+    // НОВОЕ: Метод для запуска анимации получения урона
+    public void triggerDamageAnimation(int playerId) {
+        this.damagedPlayerId = playerId;
+        this.damageAnimationActive = true;
+        this.damageAnimationFrame = 0;
+
+        if (damageAnimationTimer != null && damageAnimationTimer.isRunning()) {
+            damageAnimationTimer.stop();
+        }
+
+        damageAnimationTimer = new Timer(100, e -> {
+            damageAnimationFrame++;
+            if (damageAnimationFrame > 10) {
+                damageAnimationActive = false;
+                damageAnimationTimer.stop();
+            }
+            frame.repaint();
+        });
+        damageAnimationTimer.start();
+    }
+
+    // НОВОЕ: Метод для запуска анимации подсветки текущего игрока
+    public void triggerHighlightAnimation() {
+        this.highlightAnimationActive = true;
+        this.highlightAnimationFrame = 0;
+
+        if (highlightAnimationTimer != null && highlightAnimationTimer.isRunning()) {
+            highlightAnimationTimer.stop();
+        }
+
+        highlightAnimationTimer = new Timer(100, e -> {
+            highlightAnimationFrame++;
+            if (highlightAnimationFrame > 15) {
+                highlightAnimationActive = false;
+                highlightAnimationTimer.stop();
+            }
+            frame.repaint();
+        });
+        highlightAnimationTimer.start();
     }
 
     public void addMessage(String message) {
@@ -225,8 +286,6 @@ public class ClientGUI {
             String message = winner == playerId ?
                     "🎉 Поздравляем! Вы победили!" :
                     "😢 Игрок " + winner + " победил!";
-
-            Toolkit.getDefaultToolkit().beep();
 
             JOptionPane.showMessageDialog(frame, message, "Конец игры", JOptionPane.INFORMATION_MESSAGE);
             sendButton.setEnabled(false);
@@ -258,6 +317,12 @@ public class ClientGUI {
 
             drawBackground(g2d, width, height);
             drawBattleField(g2d, width, height);
+
+            // НОВОЕ: Сначала рисуем анимацию урона (под игроками)
+            if (damageAnimationActive) {
+                drawDamageAnimation(g2d, width, height);
+            }
+
             drawHpBars(g2d, width, height);
             drawQuestion(g2d, width, height);
 
@@ -281,6 +346,28 @@ public class ClientGUI {
             int player1X = width / 10;
             int player2X = width - width / 10 - playerWidth;
             int playerY = height / 3;
+
+            // НОВОЕ: Подсветка текущего игрока
+            if (gameStarted && currentTurnPlayer > 0) {
+                int highlightX = (currentTurnPlayer == 1) ? player1X : player2X;
+
+                // Анимация пульсации подсветки
+                float pulseAlpha = 0.3f;
+                if (highlightAnimationActive) {
+                    pulseAlpha = 0.5f * (1 - highlightAnimationFrame / 15f);
+                }
+
+                g.setColor(new Color(255, 255, 100, (int)(pulseAlpha * 255)));
+                g.fillRoundRect(highlightX - 10, playerY - 10,
+                        playerWidth + 20, playerHeight + 20, 30, 30);
+
+                // Контур подсветки
+                g.setColor(new Color(255, 200, 0, 150));
+                g.setStroke(new BasicStroke(3));
+                g.drawRoundRect(highlightX - 10, playerY - 10,
+                        playerWidth + 20, playerHeight + 20, 30, 30);
+                g.setStroke(new BasicStroke(1));
+            }
 
             // Игрок 1
             GradientPaint player1Gradient = new GradientPaint(
@@ -311,6 +398,26 @@ public class ClientGUI {
                     0, new float[]{10, 10}, 0));
             g.drawLine(width / 2, height / 6, width / 2, height - height / 4);
             g.setStroke(new BasicStroke(1));
+        }
+
+        // НОВОЕ: Метод рисования анимации получения урона
+        private void drawDamageAnimation(Graphics2D g, int width, int height) {
+            int playerWidth = width / 8;
+            int playerHeight = height / 3;
+            int playerX = (damagedPlayerId == 1) ? width / 10 : width - width / 10 - playerWidth;
+            int playerY = height / 3;
+
+            // Пульсирующий красный эффект
+            float alpha = 0.7f * (1 - damageAnimationFrame / 10f);
+            g.setColor(new Color(255, 0, 0, (int)(alpha * 255)));
+            g.fillRoundRect(playerX, playerY, playerWidth, playerHeight, 20, 20);
+
+            // Эффект "вспышки"
+            if (damageAnimationFrame < 3) {
+                g.setColor(new Color(255, 100, 100, 100));
+                g.fillRoundRect(playerX - 5, playerY - 5,
+                        playerWidth + 10, playerHeight + 10, 25, 25);
+            }
         }
 
         private void drawHpBars(Graphics2D g, int width, int height) {

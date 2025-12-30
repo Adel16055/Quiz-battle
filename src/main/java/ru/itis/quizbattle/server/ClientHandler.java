@@ -1,6 +1,7 @@
 package ru.itis.quizbattle.server;
 
 import ru.itis.quizbattle.common.Message;
+
 import java.io.*;
 import java.net.Socket;
 
@@ -74,10 +75,8 @@ public class ClientHandler extends Thread {
 
         String result = gameState.processAnswer(playerId, answer);
 
-        server.broadcastChat(String.valueOf(playerId),
-                "Игрок " + playerId + " ответил: " + answer);
+        server.broadcastChat(String.valueOf(playerId), "Игрок " + playerId + " ответил: " + answer);
         server.broadcastChat("0", result);
-
         server.broadcastState();
 
         if (gameState.isGameOver()) {
