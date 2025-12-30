@@ -1,16 +1,12 @@
 package ru.itis.quizbattle.client;
 
 import ru.itis.quizbattle.common.Message;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-/**
- * Главный графический интерфейс клиента с интегрированной игровой панелью
- */
 public class ClientGUI {
     public JFrame frame;
     private JTextArea chatArea;
@@ -19,7 +15,6 @@ public class ClientGUI {
     private JLabel connectionStatus;
     private Client client;
 
-    // Игровое состояние
     private int playerId = 0;
     private int player1Hp = Message.INITIAL_HP;
     private int player2Hp = Message.INITIAL_HP;
@@ -27,19 +22,16 @@ public class ClientGUI {
     private boolean gameStarted = false;
     private int currentTurnPlayer = 0;
 
-    // Анимационные параметры
     private boolean isAnimating = false;
     private int attackAnimationFrame = 0;
     private int attackerId = 1;
     private Timer animationTimer;
 
-    // Анимация получения урона
     private boolean damageAnimationActive = false;
     private int damageAnimationFrame = 0;
     private int damagedPlayerId = 0;
     private Timer damageAnimationTimer;
 
-    // Анимация подсветки текущего игрока
     private boolean highlightAnimationActive = false;
     private int highlightAnimationFrame = 0;
     private Timer highlightAnimationTimer;
@@ -54,7 +46,6 @@ public class ClientGUI {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setLayout(new BorderLayout());
 
-        // Обработчик закрытия окна
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -64,22 +55,18 @@ public class ClientGUI {
             }
         });
 
-        // Панель статуса
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        connectionStatus = new JLabel("❌ Не подключено");
+        connectionStatus = new JLabel("Не подключено");
         connectionStatus.setForeground(Color.RED);
         statusPanel.add(connectionStatus);
         frame.add(statusPanel, BorderLayout.NORTH);
 
-        // Создаем игровую панель (кастомный JPanel)
         GamePanel gamePanel = new GamePanel();
         frame.add(gamePanel, BorderLayout.CENTER);
 
-        // Создаем нижнюю панель с чатом
         JPanel bottomPanel = createBottomPanel();
         frame.add(bottomPanel, BorderLayout.SOUTH);
 
-        // Настройка окна
         frame.setSize(900, 600);
         frame.setMinimumSize(new Dimension(800, 500));
         frame.setLocationRelativeTo(null);
@@ -89,7 +76,6 @@ public class ClientGUI {
     private JPanel createBottomPanel() {
         JPanel bottomPanel = new JPanel(new BorderLayout());
 
-        // Чат
         chatArea = new JTextArea(8, 40);
         chatArea.setEditable(false);
         chatArea.setLineWrap(true);
@@ -98,7 +84,6 @@ public class ClientGUI {
         scrollPane.setPreferredSize(new Dimension(0, 150));
         bottomPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Панель ввода
         JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
         inputPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
@@ -140,12 +125,11 @@ public class ClientGUI {
     }
 
     public void updateGameState(int player1Hp, int player2Hp) {
-        // Проверяем, получил ли кто-то урон
         if (this.player1Hp > player1Hp) {
-            triggerDamageAnimation(1); // Игрок 1 получил урон
+            triggerDamageAnimation(1);
         }
         if (this.player2Hp > player2Hp) {
-            triggerDamageAnimation(2); // Игрок 2 получил урон
+            triggerDamageAnimation(2);
         }
 
         this.player1Hp = player1Hp;
@@ -167,7 +151,6 @@ public class ClientGUI {
         if (!question.equals("Ожидание вопроса...")) {
             addMessage("Новый вопрос: " + question);
             gameStarted = true;
-            // Сразу обновляем панель
             frame.repaint();
         }
     }
@@ -177,28 +160,10 @@ public class ClientGUI {
         sendButton.setEnabled(true);
         addMessage("Вы игрок " + id);
 
-        // Обновляем заголовок окна
         SwingUtilities.invokeLater(() -> {
             frame.setTitle("Quiz Battle - Игрок " + id);
         });
 
-        frame.repaint();
-    }
-
-    public void setCurrentTurnPlayer(int playerId) {
-        this.currentTurnPlayer = playerId;
-        // Запускаем анимацию подсветки при смене хода
-        if (gameStarted) {
-            triggerHighlightAnimation();
-        }
-        frame.repaint();
-    }
-
-    public void setGameStarted(boolean started) {
-        this.gameStarted = started;
-        if (started) {
-            addMessage("Игра началась!");
-        }
         frame.repaint();
     }
 
@@ -222,7 +187,6 @@ public class ClientGUI {
         animationTimer.start();
     }
 
-    // Метод для запуска анимации получения урона
     public void triggerDamageAnimation(int playerId) {
         this.damagedPlayerId = playerId;
         this.damageAnimationActive = true;
@@ -243,7 +207,6 @@ public class ClientGUI {
         damageAnimationTimer.start();
     }
 
-    // Метод для запуска анимации подсветки текущего игрока
     public void triggerHighlightAnimation() {
         this.highlightAnimationActive = true;
         this.highlightAnimationFrame = 0;
@@ -273,10 +236,10 @@ public class ClientGUI {
     public void setConnected(boolean connected) {
         SwingUtilities.invokeLater(() -> {
             if (connected) {
-                connectionStatus.setText("✅ Подключено");
+                connectionStatus.setText("Подключено");
                 connectionStatus.setForeground(Color.GREEN);
             } else {
-                connectionStatus.setText("❌ Отключено");
+                connectionStatus.setText("Отключено");
                 connectionStatus.setForeground(Color.RED);
                 sendButton.setEnabled(false);
             }
@@ -286,8 +249,8 @@ public class ClientGUI {
     public void showWinner(int winner) {
         SwingUtilities.invokeLater(() -> {
             String message = winner == playerId ?
-                    "🎉 Поздравляем! Вы победили!" :
-                    "😢 Игрок " + winner + " победил!";
+                    "Поздравляем! Вы победили!" :
+                    "Игрок " + winner + " победил!";
 
             JOptionPane.showMessageDialog(frame, message, "Конец игры", JOptionPane.INFORMATION_MESSAGE);
             sendButton.setEnabled(false);
@@ -299,9 +262,6 @@ public class ClientGUI {
         frame.setTitle(title);
     }
 
-    /**
-     * Внутренний класс игровой панели
-     */
     private class GamePanel extends JPanel {
         public GamePanel() {
             setBackground(new Color(245, 245, 255));
@@ -320,7 +280,6 @@ public class ClientGUI {
             drawBackground(g2d, width, height);
             drawBattleField(g2d, width, height);
 
-            // Сначала рисуем анимацию урона (под игроками)
             if (damageAnimationActive) {
                 drawDamageAnimation(g2d, width, height);
             }
@@ -349,11 +308,9 @@ public class ClientGUI {
             int player2X = width - width / 10 - playerWidth;
             int playerY = height / 3;
 
-            // Подсветка текущего игрока
             if (gameStarted && currentTurnPlayer > 0) {
                 int highlightX = (currentTurnPlayer == 1) ? player1X : player2X;
 
-                // Анимация пульсации подсветки
                 float pulseAlpha = 0.3f;
                 if (highlightAnimationActive) {
                     pulseAlpha = 0.5f * (1 - highlightAnimationFrame / 15f);
@@ -363,7 +320,6 @@ public class ClientGUI {
                 g.fillRoundRect(highlightX - 10, playerY - 10,
                         playerWidth + 20, playerHeight + 20, 30, 30);
 
-                // Контур подсветки
                 g.setColor(new Color(255, 200, 0, 150));
                 g.setStroke(new BasicStroke(3));
                 g.drawRoundRect(highlightX - 10, playerY - 10,
@@ -371,7 +327,6 @@ public class ClientGUI {
                 g.setStroke(new BasicStroke(1));
             }
 
-            // Игрок 1
             GradientPaint player1Gradient = new GradientPaint(
                     player1X, playerY, new Color(220, 50, 50),
                     player1X, playerY + playerHeight, new Color(180, 30, 30)
@@ -383,7 +338,6 @@ public class ClientGUI {
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString("Игрок 1", player1X + playerWidth/4, playerY - 10);
 
-            // Игрок 2
             GradientPaint player2Gradient = new GradientPaint(
                     player2X, playerY, new Color(50, 50, 220),
                     player2X, playerY + playerHeight, new Color(30, 30, 180)
@@ -394,7 +348,6 @@ public class ClientGUI {
             g.drawRoundRect(player2X, playerY, playerWidth, playerHeight, 20, 20);
             g.drawString("Игрок 2", player2X + playerWidth/4, playerY - 10);
 
-            // Разделительная линия
             g.setColor(new Color(100, 100, 100, 150));
             g.setStroke(new BasicStroke(3, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL,
                     0, new float[]{10, 10}, 0));
@@ -402,19 +355,16 @@ public class ClientGUI {
             g.setStroke(new BasicStroke(1));
         }
 
-        // Метод рисования анимации получения урона
         private void drawDamageAnimation(Graphics2D g, int width, int height) {
             int playerWidth = width / 8;
             int playerHeight = height / 3;
             int playerX = (damagedPlayerId == 1) ? width / 10 : width - width / 10 - playerWidth;
             int playerY = height / 3;
 
-            // Пульсирующий красный эффект
             float alpha = 0.7f * (1 - damageAnimationFrame / 10f);
             g.setColor(new Color(255, 0, 0, (int)(alpha * 255)));
             g.fillRoundRect(playerX, playerY, playerWidth, playerHeight, 20, 20);
 
-            // Эффект "вспышки"
             if (damageAnimationFrame < 3) {
                 g.setColor(new Color(255, 100, 100, 100));
                 g.fillRoundRect(playerX - 5, playerY - 5,
@@ -429,18 +379,15 @@ public class ClientGUI {
             int bar2X = width - width / 10 - barWidth;
             int barY = height - height / 4;
 
-            // Фон
             g.setColor(Color.GRAY);
             g.fillRoundRect(bar1X, barY, barWidth, barHeight, 10, 10);
             g.fillRoundRect(bar2X, barY, barWidth, barHeight, 10, 10);
 
-            // Цвет HP
             Color hpColor1 = player1Hp > 50 ? Color.GREEN :
                     player1Hp > 25 ? Color.ORANGE : Color.RED;
             Color hpColor2 = player2Hp > 50 ? Color.GREEN :
                     player2Hp > 25 ? Color.ORANGE : Color.RED;
 
-            // Заполнение
             int fillWidth1 = (int)(barWidth * player1Hp / 100.0);
             int fillWidth2 = (int)(barWidth * player2Hp / 100.0);
 
@@ -458,19 +405,16 @@ public class ClientGUI {
             g.setPaint(hpGradient2);
             g.fillRoundRect(bar2X, barY, fillWidth2, barHeight, 10, 10);
 
-            // Контур
             g.setColor(Color.BLACK);
             g.drawRoundRect(bar1X, barY, barWidth, barHeight, 10, 10);
             g.drawRoundRect(bar2X, barY, barWidth, barHeight, 10, 10);
 
-            // Текст
             g.setFont(new Font("Arial", Font.BOLD, 16));
             g.drawString("HP: " + player1Hp, bar1X + barWidth/2 - 25, barY + 18);
             g.drawString("HP: " + player2Hp, bar2X + barWidth/2 - 25, barY + 18);
         }
 
         private void drawQuestion(Graphics2D g, int width, int height) {
-            // Рамка вопроса
             int questionWidth = width - 100;
             int questionHeight = 80;
             int questionX = 50;
@@ -481,12 +425,10 @@ public class ClientGUI {
             g.setColor(new Color(100, 100, 100));
             g.drawRoundRect(questionX, questionY, questionWidth, questionHeight, 15, 15);
 
-            // Заголовок
             g.setColor(Color.BLUE);
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString("Вопрос:", questionX + 10, questionY + 20);
 
-            // Если игра не началась ИЛИ нет вопроса, показываем сообщение об ожидании
             if (!gameStarted || currentQuestion == null || currentQuestion.equals("Ожидание вопроса...")) {
                 g.setColor(Color.GRAY);
                 g.setFont(new Font("Arial", Font.ITALIC, 14));
@@ -503,11 +445,9 @@ public class ClientGUI {
                 return;
             }
 
-            // Текст вопроса
             g.setColor(Color.BLACK);
             g.setFont(new Font("Arial", Font.PLAIN, 14));
 
-            // Разбивка на строки
             String[] words = currentQuestion.split(" ");
             StringBuilder line = new StringBuilder();
             int y = questionY + 40;
@@ -574,7 +514,6 @@ public class ClientGUI {
                 playerText = "Вы игрок " + playerId;
                 textColor = Color.DARK_GRAY;
 
-                // Если это ваш ход, выделяем звездочкой
                 if (currentTurnPlayer == playerId && gameStarted) {
                     playerText = "⭐ " + playerText + " (Ваш ход!)";
                     textColor = Color.RED;

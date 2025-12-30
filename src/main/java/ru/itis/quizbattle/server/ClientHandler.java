@@ -1,18 +1,14 @@
 package ru.itis.quizbattle.server;
 
 import ru.itis.quizbattle.common.Message;
-
 import java.io.*;
 import java.net.Socket;
 
-/**
- * Обработчик клиентского подключения
- */
 public class ClientHandler extends Thread {
     private Socket socket;
     private Server server;
-    private PrintWriter out;
-    private BufferedReader in;
+    private PrintWriter printWriter;
+    private BufferedReader bufferedReader;
     private int playerId;
     private GameState gameState;
 
@@ -26,27 +22,22 @@ public class ClientHandler extends Thread {
         this.gameState = gameState;
     }
 
-    // Метод для отправки JOIN сообщения ПЕРЕД запуском потока
     public void sendJoinMessage() {
         try {
-            out = new PrintWriter(socket.getOutputStream(), true);
-            out.println(new Message(Message.Type.JOIN, String.valueOf(playerId)));
+            printWriter = new PrintWriter(socket.getOutputStream(), true);
+            printWriter.println(new Message(Message.Type.JOIN, String.valueOf(playerId)));
         } catch (IOException e) {
-            System.err.println("❌ Ошибка отправки JOIN сообщения игроку " + playerId + ": " + e.getMessage());
         }
     }
 
     @Override
     public void run() {
         try {
-            // Инициализируем потоки ввода
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            // Основной цикл обработки сообщений
             String inputLine;
-            while ((inputLine = in.readLine()) != null) {
+            while ((inputLine = bufferedReader.readLine()) != null) {
                 Message msg = Message.fromString(inputLine);
-                System.out.println("📨 От игрока " + playerId + ": " + msg);
 
                 if (msg.getType() == Message.Type.ANSWER) {
                     processAnswer(msg.getData()[1]);
@@ -57,7 +48,6 @@ public class ClientHandler extends Thread {
             server.removeClient(this);
 
         } catch (IOException e) {
-            System.err.println("⚠️ Ошибка клиента " + playerId + ": " + e.getMessage());
             server.removeClient(this);
         }
     }
@@ -91,9 +81,8 @@ public class ClientHandler extends Thread {
     }
 
     public void sendMessage(Message msg) {
-        if (out != null) {
-            System.out.println("📤 Игроку " + playerId + ": " + msg); // Отладка
-            out.println(msg.toString());
+        if (printWriter != null) {
+            printWriter.println(msg.toString());
         }
     }
 }

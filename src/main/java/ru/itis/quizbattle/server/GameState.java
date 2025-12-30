@@ -2,18 +2,14 @@ package ru.itis.quizbattle.server;
 
 import ru.itis.quizbattle.common.Message;
 import ru.itis.quizbattle.common.Question;
-
 import java.io.*;
 import java.util.*;
 
-/**
- * Управление состоянием игры и вопросами
- */
 public class GameState {
     private int player1Hp = Message.INITIAL_HP;
     private int player2Hp = Message.INITIAL_HP;
     private Question currentQuestion;
-    private int currentPlayer = 1; // Кто должен отвечать сейчас
+    private int currentPlayer = 1;
     private List<Question> questions = new ArrayList<>();
     private Random random = new Random();
     private Set<String> usedQuestions = new HashSet<>();
@@ -21,15 +17,12 @@ public class GameState {
     public GameState() {
         loadQuestionsFromFile();
         currentQuestion = getRandomQuestion();
-        System.out.println("Создано состояние игры с вопросом: " +
-                (currentQuestion != null ? currentQuestion.getText() : "null"));
     }
 
     private void loadQuestionsFromFile() {
         File file = new File("questions.txt");
 
         if (!file.exists()) {
-            System.err.println("❌ Файл questions.txt не найден");
             return;
         }
 
@@ -40,7 +33,7 @@ public class GameState {
             while ((line = br.readLine()) != null) {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("#")) {
-                    continue; // Пропускаем пустые строки и комментарии
+                    continue;
                 }
 
                 String[] parts = line.split("\\|");
@@ -55,23 +48,17 @@ public class GameState {
                 }
             }
 
-            System.out.println("✅ Загружено " + count + " вопросов из файла questions.txt");
-
         } catch (IOException e) {
-            System.err.println("❌ Ошибка чтения файла questions.txt: " + e.getMessage());
         }
     }
 
     private Question getRandomQuestion() {
         if (questions.isEmpty()) {
-            System.err.println("❌ Список вопросов пуст!");
             return null;
         }
 
-        // Если все вопросы уже использованы, начинаем заново
         if (usedQuestions.size() >= questions.size()) {
             usedQuestions.clear();
-            System.out.println("🔄 Все вопросы использованы, начинаем заново");
         }
 
         Question question;
@@ -80,7 +67,6 @@ public class GameState {
         } while (usedQuestions.contains(question.getText()) && usedQuestions.size() < questions.size());
 
         usedQuestions.add(question.getText());
-        System.out.println("🎲 Выбран вопрос: " + question.getText());
         return question;
     }
 
@@ -90,7 +76,6 @@ public class GameState {
         }
 
         if (currentQuestion == null) {
-            System.err.println("❌ Нет текущего вопроса!");
             return "Ошибка: нет вопроса";
         }
 
@@ -136,14 +121,6 @@ public class GameState {
 
     public int getCurrentPlayer() {
         return currentPlayer;
-    }
-
-    public void resetGame() {
-        player1Hp = Message.INITIAL_HP;
-        player2Hp = Message.INITIAL_HP;
-        currentPlayer = 1;
-        usedQuestions.clear();
-        currentQuestion = getRandomQuestion();
     }
 
     @Override
