@@ -33,13 +33,13 @@ public class ClientGUI {
     private int attackerId = 1;
     private Timer animationTimer;
 
-    // НОВОЕ: Анимация получения урона
+    // Анимация получения урона
     private boolean damageAnimationActive = false;
     private int damageAnimationFrame = 0;
     private int damagedPlayerId = 0;
     private Timer damageAnimationTimer;
 
-    // НОВОЕ: Анимация подсветки текущего игрока
+    // Анимация подсветки текущего игрока
     private boolean highlightAnimationActive = false;
     private int highlightAnimationFrame = 0;
     private Timer highlightAnimationTimer;
@@ -140,7 +140,7 @@ public class ClientGUI {
     }
 
     public void updateGameState(int player1Hp, int player2Hp) {
-        // НОВОЕ: Проверяем, получил ли кто-то урон
+        // Проверяем, получил ли кто-то урон
         if (this.player1Hp > player1Hp) {
             triggerDamageAnimation(1); // Игрок 1 получил урон
         }
@@ -167,8 +167,9 @@ public class ClientGUI {
         if (!question.equals("Ожидание вопроса...")) {
             addMessage("Новый вопрос: " + question);
             gameStarted = true;
+            // Сразу обновляем панель
+            frame.repaint();
         }
-        frame.repaint();
     }
 
     public void setPlayerId(int id) {
@@ -176,6 +177,7 @@ public class ClientGUI {
         sendButton.setEnabled(true);
         addMessage("Вы игрок " + id);
 
+        // Обновляем заголовок окна
         SwingUtilities.invokeLater(() -> {
             frame.setTitle("Quiz Battle - Игрок " + id);
         });
@@ -185,7 +187,7 @@ public class ClientGUI {
 
     public void setCurrentTurnPlayer(int playerId) {
         this.currentTurnPlayer = playerId;
-        // НОВОЕ: Запускаем анимацию подсветки при смене хода
+        // Запускаем анимацию подсветки при смене хода
         if (gameStarted) {
             triggerHighlightAnimation();
         }
@@ -220,7 +222,7 @@ public class ClientGUI {
         animationTimer.start();
     }
 
-    // НОВОЕ: Метод для запуска анимации получения урона
+    // Метод для запуска анимации получения урона
     public void triggerDamageAnimation(int playerId) {
         this.damagedPlayerId = playerId;
         this.damageAnimationActive = true;
@@ -241,7 +243,7 @@ public class ClientGUI {
         damageAnimationTimer.start();
     }
 
-    // НОВОЕ: Метод для запуска анимации подсветки текущего игрока
+    // Метод для запуска анимации подсветки текущего игрока
     public void triggerHighlightAnimation() {
         this.highlightAnimationActive = true;
         this.highlightAnimationFrame = 0;
@@ -318,7 +320,7 @@ public class ClientGUI {
             drawBackground(g2d, width, height);
             drawBattleField(g2d, width, height);
 
-            // НОВОЕ: Сначала рисуем анимацию урона (под игроками)
+            // Сначала рисуем анимацию урона (под игроками)
             if (damageAnimationActive) {
                 drawDamageAnimation(g2d, width, height);
             }
@@ -347,7 +349,7 @@ public class ClientGUI {
             int player2X = width - width / 10 - playerWidth;
             int playerY = height / 3;
 
-            // НОВОЕ: Подсветка текущего игрока
+            // Подсветка текущего игрока
             if (gameStarted && currentTurnPlayer > 0) {
                 int highlightX = (currentTurnPlayer == 1) ? player1X : player2X;
 
@@ -400,7 +402,7 @@ public class ClientGUI {
             g.setStroke(new BasicStroke(1));
         }
 
-        // НОВОЕ: Метод рисования анимации получения урона
+        // Метод рисования анимации получения урона
         private void drawDamageAnimation(Graphics2D g, int width, int height) {
             int playerWidth = width / 8;
             int playerHeight = height / 3;
@@ -484,13 +486,17 @@ public class ClientGUI {
             g.setFont(new Font("Arial", Font.BOLD, 14));
             g.drawString("Вопрос:", questionX + 10, questionY + 20);
 
-            // Если игра не началась, показываем сообщение об ожидании
-            if (!gameStarted || currentQuestion.equals("Ожидание вопроса...")) {
+            // Если игра не началась ИЛИ нет вопроса, показываем сообщение об ожидании
+            if (!gameStarted || currentQuestion == null || currentQuestion.equals("Ожидание вопроса...")) {
                 g.setColor(Color.GRAY);
                 g.setFont(new Font("Arial", Font.ITALIC, 14));
-                String waitingText = "Ожидание подключения второго игрока...";
-                if (playerId > 0) {
-                    waitingText = "Ожидаем второго игрока...";
+                String waitingText;
+                if (playerId == 0) {
+                    waitingText = "Ожидание подключения...";
+                } else if (!gameStarted) {
+                    waitingText = "Ожидаем подключения второго игрока...";
+                } else {
+                    waitingText = "Ожидание вопроса...";
                 }
                 int textWidth = g.getFontMetrics().stringWidth(waitingText);
                 g.drawString(waitingText, questionX + (questionWidth - textWidth) / 2, questionY + 50);

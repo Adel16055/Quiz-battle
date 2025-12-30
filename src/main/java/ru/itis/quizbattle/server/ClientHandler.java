@@ -77,6 +77,7 @@ public class ClientHandler extends Thread {
 
         server.broadcastChat(String.valueOf(playerId), "Игрок " + playerId + " ответил: " + answer);
         server.broadcastChat("0", result);
+
         server.broadcastState();
 
         if (gameState.isGameOver()) {
@@ -91,6 +92,7 @@ public class ClientHandler extends Thread {
 
     public void sendMessage(Message msg) {
         if (out != null) {
+            System.out.println("📤 Игроку " + playerId + ": " + msg); // Отладка
             out.println(msg.toString());
         }
     }

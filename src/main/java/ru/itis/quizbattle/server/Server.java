@@ -44,8 +44,21 @@ public class Server {
             if (clients.size() == Message.MAX_PLAYERS) {
                 startGame();
             } else {
-                broadcastChat("0", "Ожидаем подключения " + (Message.MAX_PLAYERS - clients.size()) + " игрока(ов)...");
+                int playersNeeded = Message.MAX_PLAYERS - clients.size();
+                String playersText = getPlayersText(playersNeeded);
+                broadcastChat("0", "Ожидаем подключения " + playersText + " игрока...");
             }
+        }
+    }
+
+    // Метод для правильного склонения слова "игрок"
+    private String getPlayersText(int count) {
+        if (count == 1) {
+            return "второго";
+        } else if (count == 2) {
+            return "второго";
+        } else {
+            return String.valueOf(count);
         }
     }
 
@@ -61,9 +74,25 @@ public class Server {
         }
 
         broadcastState();
-        int currentPlayer = gameState.getCurrentPlayer();
-        sendQuestionToCurrentPlayer();
-        broadcastChat("0", "Игрок " + currentPlayer + " отвечает первым!");
+
+        // НЕМЕДЛЕННО отправляем вопрос текущему игроку
+        if (gameState.getCurrentQuestion() != null) {
+            int currentPlayer = gameState.getCurrentPlayer();
+            String question = gameState.getCurrentQuestion().getText();
+
+            System.out.println("📝 Отправляем вопрос игроку " + currentPlayer + ": " + question);
+
+            // Отправляем вопрос ТОЛЬКО текущему игроку
+            clients.get(currentPlayer - 1).sendMessage(
+                    new Message(Message.Type.QUESTION, question)
+            );
+
+            // Отправляем сообщение всем о том, кто сейчас отвечает
+            broadcastChat("0", "Игрок " + currentPlayer + " отвечает первым!");
+        } else {
+            System.err.println("❌ Вопрос не найден!");
+            broadcastChat("0", "Ошибка: вопрос не найден!");
+        }
     }
 
     public void broadcastState() {
@@ -76,9 +105,12 @@ public class Server {
     }
 
     public void sendQuestionToCurrentPlayer() {
-        if (gameState != null) {
+        if (gameState != null && gameState.getCurrentQuestion() != null) {
             int currentPlayer = gameState.getCurrentPlayer();
             String question = gameState.getCurrentQuestion().getText();
+
+            System.out.println("📝 Отправляем вопрос игроку " + currentPlayer + ": " + question);
+
             clients.get(currentPlayer - 1).sendMessage(
                     new Message(Message.Type.QUESTION, question)
             );

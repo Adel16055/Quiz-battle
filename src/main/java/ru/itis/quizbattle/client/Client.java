@@ -54,6 +54,7 @@ public class Client extends Thread {
         try {
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
+                System.out.println("Получено от сервера: " + serverMessage); // Отладка
                 Message msg = Message.fromString(serverMessage);
                 processMessage(msg);
             }
@@ -82,6 +83,7 @@ public class Client extends Thread {
 
     private void handleQuestion(Message msg) {
         String question = msg.getData()[0];
+        System.out.println("Получен вопрос от сервера: " + question); // Отладка
         gui.setQuestion(question);
     }
 
