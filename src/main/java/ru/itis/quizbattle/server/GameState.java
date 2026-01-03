@@ -118,8 +118,12 @@ public class GameState {
     }
 
     public int getWinner() {
-        if (player1Hp <= 0) return 2;
-        if (player2Hp <= 0) return 1;
+        if (player1Hp <= 0){
+            return 2;
+        }
+        if (player2Hp <= 0){
+            return 1;
+        }
         return 0;
     }
 

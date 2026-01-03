@@ -19,7 +19,7 @@ public class Client extends Thread {
     private void connectToServer(String serverAddress) {
         try {
             socket = new Socket(serverAddress, Message.PORT);
-            printWriter = new PrintWriter(socket.getOutputStream(), true);
+            printWriter = new PrintWriter(socket.getOutputStream());
             bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             clientGUI.setConnected(true);
             clientGUI.addMessage("Подключено к серверу " + serverAddress);
@@ -115,9 +115,16 @@ public class Client extends Thread {
     public void sendAnswer(String answer) {
         if (socket != null && socket.isConnected() && !socket.isClosed()) {
             Message msg = new Message(Message.Type.ANSWER, String.valueOf(playerId), answer);
-            printWriter.println(msg.toString());
+            sendMessage(msg);
         } else {
             clientGUI.addMessage("Нет подключения к серверу");
+        }
+    }
+
+    private void sendMessage(Message msg) {
+        if (printWriter != null) {
+            printWriter.println(msg.toString());
+            printWriter.flush();
         }
     }
 

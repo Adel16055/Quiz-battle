@@ -24,9 +24,10 @@ public class ClientHandler extends Thread {
 
     public void sendJoinMessage() {
         try {
-            printWriter = new PrintWriter(socket.getOutputStream(), true);
+            printWriter = new PrintWriter(socket.getOutputStream());
             printWriter.println(new Message(Message.Type.JOIN, String.valueOf(playerId)));
         } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -80,9 +81,10 @@ public class ClientHandler extends Thread {
         server.broadcastChat("0", "Сейчас отвечает игрок " + currentPlayer);
     }
 
-    public void sendMessage(Message msg) {
+    public void sendMessage(Message message) {
         if (printWriter != null) {
-            printWriter.println(msg.toString());
+            printWriter.println(message.toString());
+            printWriter.flush();
         }
     }
 }

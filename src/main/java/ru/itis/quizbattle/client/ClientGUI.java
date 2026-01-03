@@ -139,14 +139,6 @@ public class ClientGUI {
         frame.repaint();
     }
 
-    public int getPlayer1Hp() {
-        return player1Hp;
-    }
-
-    public int getPlayer2Hp() {
-        return player2Hp;
-    }
-
     public void setQuestion(String question) {
         this.currentQuestion = question;
         if (!question.equals("Ожидание вопроса...")) {
