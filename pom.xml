@@ -25,7 +25,6 @@
         <configuration>
           <archive>
             <manifest>
-              <!-- Точка входа - ClientGUI -->
               <mainClass>ru.itis.quizbattle.client.ClientGUI</mainClass>
             </manifest>
           </archive>

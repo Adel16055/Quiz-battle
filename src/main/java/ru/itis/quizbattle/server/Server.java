@@ -11,9 +11,6 @@ public class Server {
     private List<ClientHandler> clients = new ArrayList<>();
     private boolean gameStarted = false;
 
-    public Server() {
-        gameState = null;
-    }
 
     public void start(int port) throws IOException {
         serverSocket = new ServerSocket(port);
@@ -37,20 +34,8 @@ public class Server {
             if (clients.size() == Message.MAX_PLAYERS) {
                 startGame();
             } else {
-                int playersNeeded = Message.MAX_PLAYERS - clients.size();
-                String playersText = getPlayersText(playersNeeded);
-                broadcastChat("0", "Ожидаем подключения " + playersText + " игрока...");
+                broadcastChat("0", "Ожидаем подключения второго игрока...");
             }
-        }
-    }
-
-    private String getPlayersText(int count) {
-        if (count == 1) {
-            return "второго";
-        } else if (count == 2) {
-            return "второго";
-        } else {
-            return String.valueOf(count);
         }
     }
 
@@ -85,10 +70,12 @@ public class Server {
     }
 
     public void broadcastState() {
+
         if (gameState != null) {
             Message msg = new Message(Message.Type.STATE,
                     String.valueOf(gameState.getPlayer1Hp()),
-                    String.valueOf(gameState.getPlayer2Hp()));
+                    String.valueOf(gameState.getPlayer2Hp()),
+                    String.valueOf(gameState.getCurrentPlayer()));
             broadcast(msg);
         }
     }

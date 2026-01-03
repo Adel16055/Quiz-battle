@@ -20,7 +20,7 @@ public class GameState {
     }
 
     private void loadQuestionsFromFile() {
-        
+
         try (InputStream inputStream = getClass().getClassLoader()
                 .getResourceAsStream("questions.txt")) {
 
@@ -67,18 +67,20 @@ public class GameState {
             return null;
         }
 
-        if (usedQuestions.size() >= questions.size()) {
+        if (usedQuestions.size() == questions.size()) {
             usedQuestions.clear();
         }
 
-        Question question;
-        do {
-            question = questions.get(random.nextInt(questions.size()));
-        } while (usedQuestions.contains(question.getText()) && usedQuestions.size() < questions.size());
+        Question question = questions.get(random.nextInt(questions.size()));
+
+        if (usedQuestions.contains(question.getText())) {
+            return getRandomQuestion();
+        }
 
         usedQuestions.add(question.getText());
         return question;
     }
+
 
     public String processAnswer(int playerId, String answer) {
         if (playerId != currentPlayer) {
@@ -97,15 +99,19 @@ public class GameState {
             } else {
                 player1Hp = Math.max(0, player1Hp - Message.DAMAGE_PER_QUESTION);
             }
-            currentPlayer = (currentPlayer == 1) ? 2 : 1;
-            currentQuestion = getRandomQuestion();
-            return "Правильно! Нанесено " + Message.DAMAGE_PER_QUESTION + " урона";
-        } else {
-            currentPlayer = (currentPlayer == 1) ? 2 : 1;
-            currentQuestion = getRandomQuestion();
-            return "Неправильно! Ход переходит сопернику";
         }
+
+        currentPlayer = (currentPlayer == 1) ? 2 : 1;
+        currentQuestion = getRandomQuestion();
+
+        if (isCorrect) {
+            return "Правильно! Нанесено " + Message.DAMAGE_PER_QUESTION + " урона";
+        }
+        return "Неправильно! Ход переходит сопернику";
+
+
     }
+
 
     public boolean isGameOver() {
         return player1Hp <= 0 || player2Hp <= 0;

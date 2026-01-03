@@ -102,6 +102,7 @@ public class ClientGUI {
         return bottomPanel;
     }
 
+
     private void connectToServer() {
         String serverAddress = JOptionPane.showInputDialog(
                 frame,
@@ -466,6 +467,8 @@ public class ClientGUI {
             }
         }
 
+
+
         private void drawAttackAnimation(Graphics2D g, int width, int height) {
             int playerWidth = width / 8;
             int playerHeight = height / 3;
@@ -504,26 +507,30 @@ public class ClientGUI {
         private void drawPlayerInfo(Graphics2D g, int width, int height) {
             g.setFont(new Font("Arial", Font.BOLD, 16));
 
-            String playerText;
-            Color textColor;
-
             if (playerId == 0) {
-                playerText = "Ожидание подключения...";
-                textColor = Color.GRAY;
+                g.setColor(Color.GRAY);
+                g.drawString("Ожидание подключения...", 20, 30);
             } else {
-                playerText = "Вы игрок " + playerId;
-                textColor = Color.DARK_GRAY;
+
+                String playerText = "Вы игрок " + playerId;
+                g.setColor(Color.DARK_GRAY);
+                int playerWidth = g.getFontMetrics().stringWidth(playerText);
+                g.drawString(playerText, width - playerWidth - 20, 30);
 
                 if (currentTurnPlayer == playerId && gameStarted) {
-                    playerText = "⭐ " + playerText + " (Ваш ход!)";
-                    textColor = Color.RED;
+                    String turnText = " Ваш ход!";
+                    g.setColor(Color.GREEN);
+                    int turnWidth = g.getFontMetrics().stringWidth(turnText);
+                    g.drawString(turnText, width - turnWidth - 20, 30 + 25);
                 }
             }
 
-            g.setColor(textColor);
-            int textWidth = g.getFontMetrics().stringWidth(playerText);
-            g.drawString(playerText, width - textWidth - 20, 30);
         }
+    }
+
+    public void setCurrentTurnPlayer(int currentTurnPlayer) {
+        this.currentTurnPlayer = currentTurnPlayer;
+        frame.repaint();
     }
 
     public static void main(String[] args) {

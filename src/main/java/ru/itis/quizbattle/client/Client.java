@@ -3,9 +3,6 @@ package ru.itis.quizbattle.client;
 import ru.itis.quizbattle.common.Message;
 import java.io.*;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Consumer;
 
 public class Client extends Thread {
     private Socket socket;
@@ -14,11 +11,8 @@ public class Client extends Thread {
     private ClientGUI clientGUI;
     private int playerId;
 
-    private final Map<Message.Type, Consumer<Message>> handlers = new HashMap<>();
-
     public Client(String serverAddress, ClientGUI clientGUI) {
         this.clientGUI = clientGUI;
-        initHandlers();
         connectToServer(serverAddress);
     }
 
@@ -33,15 +27,6 @@ public class Client extends Thread {
             clientGUI.setConnected(false);
             clientGUI.addMessage("Ошибка подключения: " + e.getMessage());
         }
-    }
-
-    private void initHandlers() {
-        handlers.put(Message.Type.JOIN, this::handleJoin);
-        handlers.put(Message.Type.QUESTION, this::handleQuestion);
-        handlers.put(Message.Type.STATE, this::handleState);
-        handlers.put(Message.Type.CHAT, this::handleChat);
-        handlers.put(Message.Type.WIN, this::handleWin);
-        handlers.put(Message.Type.ERROR, this::handleError);
     }
 
     @Override
@@ -59,13 +44,32 @@ public class Client extends Thread {
     }
 
     private void processMessage(Message msg) {
-        Consumer<Message> handler = handlers.get(msg.getType());
-        if (handler != null) {
-            handler.accept(msg);
-        } else {
-            clientGUI.addMessage("Неизвестный тип сообщения: " + msg.getType());
+        Message.Type type = msg.getType();
+
+        switch (type) {
+            case JOIN:
+                handleJoin(msg);
+                break;
+            case QUESTION:
+                handleQuestion(msg);
+                break;
+            case STATE:
+                handleState(msg);
+                break;
+            case CHAT:
+                handleChat(msg);
+                break;
+            case WIN:
+                handleWin(msg);
+                break;
+            case ERROR:
+                handleError(msg);
+                break;
+            default:
+                clientGUI.addMessage("Неизвестный тип сообщения: " + type);
         }
     }
+
 
     private void handleJoin(Message msg) {
         playerId = Integer.parseInt(msg.getData()[0]);
@@ -83,15 +87,13 @@ public class Client extends Thread {
         int player1Hp = Integer.parseInt(msg.getData()[0]);
         int player2Hp = Integer.parseInt(msg.getData()[1]);
 
+        if (msg.getData().length > 2) {
+            int currentPlayer = Integer.parseInt(msg.getData()[2]);
+            clientGUI.setCurrentTurnPlayer(currentPlayer);
+        }
+
         clientGUI.updateGameState(player1Hp, player2Hp);
 
-        if (clientGUI.getPlayer1Hp() != player1Hp || clientGUI.getPlayer2Hp() != player2Hp) {
-            if (clientGUI.getPlayer1Hp() > player1Hp) {
-                clientGUI.triggerAttackAnimation(2);
-            } else if (clientGUI.getPlayer2Hp() > player2Hp) {
-                clientGUI.triggerAttackAnimation(1);
-            }
-        }
     }
 
     private void handleChat(Message msg) {
@@ -125,6 +127,7 @@ public class Client extends Thread {
                 socket.close();
             }
         } catch (IOException e) {
+            e.printStackTrace();
         }
         clientGUI.setConnected(false);
     }
