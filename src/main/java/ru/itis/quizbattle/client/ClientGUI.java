@@ -25,7 +25,6 @@ public class ClientGUI {
     private boolean isAnimating = false;
     private int attackAnimationFrame = 0;
     private int attackerId = 1;
-    private Timer animationTimer;
 
     private boolean damageAnimationActive = false;
     private int damageAnimationFrame = 0;
@@ -34,7 +33,6 @@ public class ClientGUI {
 
     private boolean highlightAnimationActive = false;
     private int highlightAnimationFrame = 0;
-    private Timer highlightAnimationTimer;
 
     public ClientGUI() {
         createGUI();
@@ -160,25 +158,7 @@ public class ClientGUI {
         frame.repaint();
     }
 
-    public void triggerAttackAnimation(int attackerId) {
-        this.attackerId = attackerId;
-        this.isAnimating = true;
-        this.attackAnimationFrame = 0;
 
-        if (animationTimer != null && animationTimer.isRunning()) {
-            animationTimer.stop();
-        }
-
-        animationTimer = new Timer(50, e -> {
-            attackAnimationFrame++;
-            if (attackAnimationFrame > 20) {
-                isAnimating = false;
-                animationTimer.stop();
-            }
-            frame.repaint();
-        });
-        animationTimer.start();
-    }
 
     public void triggerDamageAnimation(int playerId) {
         this.damagedPlayerId = playerId;
@@ -198,25 +178,6 @@ public class ClientGUI {
             frame.repaint();
         });
         damageAnimationTimer.start();
-    }
-
-    public void triggerHighlightAnimation() {
-        this.highlightAnimationActive = true;
-        this.highlightAnimationFrame = 0;
-
-        if (highlightAnimationTimer != null && highlightAnimationTimer.isRunning()) {
-            highlightAnimationTimer.stop();
-        }
-
-        highlightAnimationTimer = new Timer(100, e -> {
-            highlightAnimationFrame++;
-            if (highlightAnimationFrame > 15) {
-                highlightAnimationActive = false;
-                highlightAnimationTimer.stop();
-            }
-            frame.repaint();
-        });
-        highlightAnimationTimer.start();
     }
 
     public void addMessage(String message) {
